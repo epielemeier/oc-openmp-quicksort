@@ -9,6 +9,7 @@ int* generate_random_array(int n);
 int* duplicate_array(int const * src, size_t len);
 double get_benchmark(int *a, int n, int thread_count);
 double** get_benchmarks(int *ns, int ns_size, int *thread_counts, int tc_size);
+void print_benchmark_table(int *ns, int ns_size, int *thread_counts, int tc_size, double **time);
 
 void quicksort(int*, int, int);
 int partition(int*, int, int);
@@ -21,6 +22,7 @@ int main(int argc, char* argv[]) {
     int threads_n = sizeof(threads_to_try) / sizeof(threads_to_try[0]);
 
     double **time = get_benchmarks(sizes_to_try, sizes_n, threads_to_try, threads_n);
+    print_benchmark_table(sizes_to_try, sizes_n, threads_to_try, threads_n, time);
     deallocate_mem(time, sizes_n);
 
     return 0;
@@ -37,6 +39,33 @@ int* duplicate_array(int const * src, size_t len) {
     int * p = malloc(len * sizeof(int));
     memcpy(p, src, len * sizeof(int));
     return p;
+}
+
+void print_benchmark_table(int *ns, int ns_size, int *thread_counts, int tc_size, double **time) {
+
+    int elementPadding = 25;
+    printf("%10s | %-*s |", "# Threads", elementPadding * ns_size, "# Elements", "");
+    char subheading[100];
+    sprintf(subheading, " %-9s | %9s | ", "Time", "Efficiency");
+
+    printf("\n%10s |", "");
+    for (int i = 0; i < ns_size; i++)
+        printf(" %-22d | ", ns[i]);
+    printf("\n%10s |", "");
+    for (int i = 0; i < ns_size; i++)
+        printf("%s", subheading);
+
+    printf("\n");
+    for (int j = 0; j < tc_size; j++) {
+        int tc = thread_counts[j];
+        printf("%10d |", tc);
+        for (int i = 0; i < ns_size; i++) {
+            double serial_time = time[i][0];
+            double parallel_time = time[i][j];
+            printf(" %-10f| %-10f | ", parallel_time, serial_time / (tc * parallel_time));
+        }
+        printf("\n");
+    }
 }
 
 double** allocate_mem(int n, int m) {
@@ -70,7 +99,7 @@ double** get_benchmarks(int *ns, int ns_size, int *thread_counts, int tc_size) {
                     if (new_time < time[i][j])
                         time[i][j] = new_time;
                 }
-                printf("Thread count: %d   # elements: %d   Result: %f\n", tc, n, time[i][j]);
+                //printf("Thread count: %d   # elements: %d   Result: %f\n", tc, n, time[i][j]);
                 free(b);
             }
         }
