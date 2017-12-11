@@ -9,7 +9,7 @@ int* generate_random_array(int n);
 int* duplicate_array(int const * src, size_t len);
 void benchmark(int *a, int n, int thread_count);
 
-void quicksort(int*, int);
+void quicksort(int*, int, int);
 int partition(int*, int, int);
 
 int main(int argc, char* argv[]) {
@@ -43,7 +43,7 @@ int* duplicate_array(int const * src, size_t len) {
 void benchmark(int *a, int n, int thread_count) {
     omp_set_num_threads(thread_count);
     double start_time = omp_get_wtime();
-    quicksort(a, n);
+    quicksort(a, n, n);
     double end_time = omp_get_wtime();
 
     for (int i = 1; i < n; i++)
@@ -54,7 +54,7 @@ void benchmark(int *a, int n, int thread_count) {
 }
 
 //Algorithm copied with minor changes from https://rosettacode.org/wiki/Sorting_algorithms/Quicksort#C
-void quicksort(int *a, int n) {
+void quicksort(int *a, int n, int max_n) {
 
     if (n < 2) return;
 
@@ -62,8 +62,18 @@ void quicksort(int *a, int n) {
 
     int new_pivot = partition(a, pivot, n);
 
-    quicksort(a, new_pivot);
-    quicksort(a + new_pivot, n - new_pivot);
+    if (n < max_n / omp_get_num_threads()) {
+        quicksort(a, new_pivot, max_n);
+        quicksort(a + new_pivot, n - new_pivot, max_n);
+    } else {
+#pragma omp parallel sections
+        {
+#pragma omp section
+            quicksort(a, new_pivot, max_n);
+#pragma omp section
+            quicksort(a + new_pivot, n - new_pivot, max_n);
+        };
+    }
 }
 
 void swap(int *a, int i, int j) {
